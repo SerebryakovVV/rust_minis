@@ -8,6 +8,17 @@ struct User {
 
 fn main() -> rsql::Result<()> {
 
+
+    let mut command: &str;
+    // command.to_string();
+    // trim
+    // split_whitespace
+    let input = std::io::stdin();
+    // loop {
+        input.read_line(command);
+        command.rsplit(" ");
+    // }
+
     // let path = "tasks.db3";
     // let db = match rsql::Connection::open(path) {
     //     Err(_) => panic!(),
