@@ -6,27 +6,87 @@ struct User {
     name: String
 }
 
+const COMMAND_CAPACITY: usize = 500;
+const DB_PATH: &str = "tasks.db3";
+
+struct Task {
+    id: i32,
+    name: String   // learn lifetimes, get rid of the allocations
+}
+
+fn add_task(arg: &str, con: &rsql::Connection) {
+    println!("add task {}", arg);
+
+    if false {
+        
+    }
+
+}
+
+fn delete_task(arg: &str, con: &rsql::Connection) {
+    println!("delete_task {}", arg);
+
+    if false {
+        
+    }
+
+}
+
+fn list_tasks(con: &rsql::Connection) {
+    let mut statement = match con.prepare("SELECT id, name FROM tasks") {
+        Ok(s) => s,
+        Err(e) => {
+            println!("Error preparing ls query! {}", e);
+            return;
+        }
+    };
+    statement.query_map([], |row| Ok({Task {id:row.get(0)?, name:row.get(1)?}})); // just retarded
+
+}
+
 fn main() -> rsql::Result<()> {
-
-
-    let mut command: &str;
-    // command.to_string();
-    // trim
-    // split_whitespace
+    let db = rsql::Connection::open(DB_PATH).expect("error connecting to db");
+    let mut command: String = String::with_capacity(COMMAND_CAPACITY);
     let input = std::io::stdin();
-    // loop {
-        input.read_line(command);
-        command.rsplit(" ");
-    // }
+    loop {
+        if let Err(e) = input.read_line(&mut command) {
+            println!("Error reading the input! {}", e);
+            continue;
+        };
+        let command_parts: Vec<&str> = command
+                                              .trim()
+                                              .split_ascii_whitespace()
+                                              .collect();
+        match command_parts.get(0) {
+            Some(&c) => {
+                match c {
+                    "delete" => {
+                        match command_parts.get(1) {
+                            Some(&a) => delete_task(a, &db),
+                            None => println!("No argument provided!")
+                        }
+                    },
+                    "add" => {
+                        match command_parts.get(1) {
+                            Some(&a) => add_task(a, &db),
+                            None => println!("No argument provided!")
+                        }
+                    },
+                    "ls" => list_tasks(&db),
+                    "q" => {return Ok(());},
+                    _ => println!("Unknown command")
+                }
+            },
+            None => println!("No command provided!")
+        }
+        command.clear();
+    }
+}
 
-    // let path = "tasks.db3";
-    // let db = match rsql::Connection::open(path) {
-    //     Err(_) => panic!(),
-    //     Ok(con) => con
-    // };
 
-    
-    // db.execute("DROP TABLE users", ())?;
+
+
+// db.execute("DROP TABLE users", ())?;
 
     // let query_result = match db.execute("CREATE TABLE users (id INTEGER PRIMARY KEY,name  TEXT NOT NULL)", ()) {
     //     Err(e) => {println!("{}", e); panic!("first");},
@@ -50,7 +110,12 @@ fn main() -> rsql::Result<()> {
         
     // }
 
-    println!("Hello, world!");
 
-    Ok(())
-}
+
+
+
+
+
+
+    //command.clear(); 
+    // print!("> ");
