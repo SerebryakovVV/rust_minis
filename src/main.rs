@@ -1,3 +1,5 @@
+use std::task;
+
 use rusqlite as rsql;
 
 
@@ -6,13 +8,16 @@ struct User {
     name: String
 }
 
+
 const COMMAND_CAPACITY: usize = 500;
 const DB_PATH: &str = "tasks.db3";
+
 
 struct Task {
     id: i32,
     name: String   // learn lifetimes, get rid of the allocations
 }
+
 
 fn add_task(arg: &str, con: &rsql::Connection) {
     println!("add task {}", arg);
@@ -23,6 +28,7 @@ fn add_task(arg: &str, con: &rsql::Connection) {
 
 }
 
+
 fn delete_task(arg: &str, con: &rsql::Connection) {
     println!("delete_task {}", arg);
 
@@ -32,6 +38,7 @@ fn delete_task(arg: &str, con: &rsql::Connection) {
 
 }
 
+
 fn list_tasks(con: &rsql::Connection) {
     let mut statement = match con.prepare("SELECT id, name FROM tasks") {
         Ok(s) => s,
@@ -40,9 +47,32 @@ fn list_tasks(con: &rsql::Connection) {
             return;
         }
     };
-    statement.query_map([], |row| Ok({Task {id:row.get(0)?, name:row.get(1)?}})); // just retarded
-
+    match statement.query_map([], |row| Ok(
+        Task {
+            id: row.get(0)?,
+            name: row.get(1)?
+        }
+    )) {
+        Ok(rows) => {
+            for (index, row) in rows.enumerate() {
+                match row {
+                    Ok(r) => {
+                        println!("{}) {}", index + 1, r.name);
+                    },
+                    Err(e) => {
+                        println!("Error in rows transfer in ls, {}", e);
+                        return;
+                    }
+                }
+            }
+        },
+        Err(e) => {
+            println!("Error mapping the rows in ls, {}", e);
+            return;
+        }
+    };
 }
+
 
 fn main() -> rsql::Result<()> {
     let db = rsql::Connection::open(DB_PATH).expect("error connecting to db");
@@ -69,8 +99,8 @@ fn main() -> rsql::Result<()> {
                     "add" => {
                         match command_parts.get(1) {
                             Some(&a) => add_task(a, &db),
-                            None => println!("No argument provided!")
-                        }
+                            None => println!("No argument provided!") // this should actually just call the function and 
+                        }                                             // then read the task inside to that function
                     },
                     "ls" => list_tasks(&db),
                     "q" => {return Ok(());},
