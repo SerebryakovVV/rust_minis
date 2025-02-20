@@ -1,11 +1,13 @@
-use std::task;
+
 
 use rusqlite as rsql;
 
+mod expressions;
 
 #[derive(Debug)]
-struct User {
-    name: String
+struct User<'a> {
+    // name: String
+    name: & 'a str
 }
 
 
@@ -85,8 +87,8 @@ fn main() -> rsql::Result<()> {
         };
         let command_parts: Vec<&str> = command
                                               .trim()
-                                              .split_ascii_whitespace()
-                                              .collect();
+                                              .split_ascii_whitespace() // only extract the first word
+                                              .collect();               // find() first whitespace (not at [0]), then split
         match command_parts.get(0) {
             Some(&c) => {
                 match c {
